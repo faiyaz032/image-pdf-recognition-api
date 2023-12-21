@@ -7,12 +7,21 @@ const extractPdf = require('./utils/extractPdf');
 const pool = require('./config/database');
 const upload = require('./utils/multer');
 const runMigration = require('./utils/runMigration');
+const multer = require('multer');
 
 // initialize the app
 const app = express();
 
 // Endpoint to extract data from image or pdf
 app.post('/metadata', upload.single('file'), async (req, res, next) => {
+  const allowedMimeTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+  if (!allowedMimeTypes.includes(file.mimetype)) {
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to process the file',
+    });
+  }
+
   const { path: filePath, mimetype } = req.file;
 
   let db = await pool.getConnection();
@@ -56,19 +65,24 @@ app.post('/metadata', upload.single('file'), async (req, res, next) => {
     }
   } catch (error) {
     console.error(error);
-    next(error.message);
+    next(new Error(error.message));
   } finally {
     //delete the file
     fs.unlink(filePath, err => console.error(err));
     db.release();
   }
+});
+
+// global error middleware
+app.use((error, req, res, next) => {
   return res.status(500).json({
     status: 'error',
-    message: 'Failed to process the file',
+    message: error.message,
   });
 });
 
 const PORT = process.env.PORT || 8080;
+
 app.listen(PORT, async () => {
   console.log(`Server is alive on PORT:${PORT}`);
   console.log('Database connected successfully');
