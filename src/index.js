@@ -1,72 +1,74 @@
-//dependencies
+// dependencies
 require('dotenv').config();
 const express = require('express');
+const fs = require('fs');
 const extractImage = require('./utils/extractImage');
 const extractPdf = require('./utils/extractPdf');
 const pool = require('./config/database');
 const upload = require('./utils/multer');
-const fs = require('fs');
 const runMigration = require('./utils/runMigration');
 
+// initialize the app
 const app = express();
 
-const PORT = process.env.PORT || 8080;
-
+// Endpoint to extract data from image or pdf
 app.post('/metadata', upload.single('file'), async (req, res, next) => {
   const { path: filePath, mimetype } = req.file;
 
   let db = await pool.getConnection();
 
   try {
-    if (mimetype === 'image/jpeg' || mimetype === 'image/jpg' || mimetype === 'image/png') {
-      const imageData = await extractImage(filePath);
+    let fileType, dimension, extractedData;
 
-      const result = await db.query(
-        `INSERT INTO files (fileType, dimension, extractedData, createdAt) VALUES (?, ?, ?, ?)`,
-        [mimetype, imageData.dimension, imageData.metadata, new Date()]
-      );
-
-      if (result[0].affectedRows) {
-        return res.status(201).json({
-          status: 'success',
-          fileType: mimetype,
-          dimension: imageData.dimension,
-          metadata: imageData.metadata,
-        });
+    // check if the file is an image or a PDF
+    if (mimetype.startsWith('image/') || mimetype === 'application/pdf') {
+      // process image
+      if (mimetype.startsWith('image/')) {
+        const imageData = await extractImage(filePath);
+        fileType = mimetype;
+        dimension = imageData.dimension;
+        extractedData = imageData.metadata;
       }
-    }
-
-    if (mimetype === 'application/pdf') {
-      const pdfData = await extractPdf(filePath);
-
-      const result = await db.query(
-        `INSERT INTO files (fileType, dimension, extractedData, createdAt) VALUES (?, ?, ?, ?)`,
-        [mimetype, null, pdfData, new Date()]
-      );
-
-      if (result[0].affectedRows) {
-        return res.status(201).json({
-          status: 'success',
-          fileType: mimetype,
-          dimension: null,
-          metadata: pdfData,
-        });
+      // process PDF
+      else if (mimetype === 'application/pdf') {
+        const pdfData = await extractPdf(filePath);
+        fileType = mimetype;
+        dimension = null;
+        extractedData = pdfData;
       }
 
-      return res.status(201).json({
-        status: 'success',
-        fileType: mimetype,
-        dimension: null,
-        metadata: pdfData,
-      });
+      // store file information to database
+      const result = await db.query(
+        `INSERT INTO files (fileType, dimension, extractedData, createdAt) VALUES (?, ?, ?, ?)`,
+        [fileType, dimension, extractedData, new Date()]
+      );
+
+      // check if the insertion was successful
+      if (result[0].affectedRows) {
+        //send response
+        return res.status(201).json({
+          status: 'success',
+          fileType,
+          dimension,
+          metadata: extractedData,
+        });
+      }
     }
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    next(error.message);
   } finally {
-    fs.unlink(filePath, err => console.log(err));
+    //delete the file
+    fs.unlink(filePath, err => console.error(err));
+    db.release();
   }
+  return res.status(500).json({
+    status: 'error',
+    message: 'Failed to process the file',
+  });
 });
 
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, async () => {
   console.log(`Server is alive on PORT:${PORT}`);
   console.log('Database connected successfully');
