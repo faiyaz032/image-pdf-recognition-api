@@ -4,7 +4,7 @@
 
 This API endpoint allows users to upload files and retrieve metadata information from Image or PDF.
 
-> Note: I've hosted the server and also the database so you don't need to configure this code in your machine to test this endpoint. You can just any api client to test this API using the given url and request info.
+> <strong>Note:</strong> I've hosted the server and also the database so you don't need to configure this code in your machine to test this endpoint. You can just any api client to test this API using the given url and request info.
 
 ## Request
 
@@ -13,9 +13,9 @@ This API endpoint allows users to upload files and retrieve metadata information
 
 - **Content-Type:** multipart/form-data
 
-#### Request Parameters
+#### Request Body
 
-- `file` (multipart/form-data): The file to be uploaded.
+- `file` (multipart/form-data): Any Image or PDF file.
 
 ## Response
 
@@ -32,3 +32,4 @@ This API endpoint allows users to upload files and retrieve metadata information
   "metadata": "Metadata of the file"
 }
 ```
+><strong>Note</strong>: The server may take little longer to send the response to the client as this is a cpu intensive task. 
