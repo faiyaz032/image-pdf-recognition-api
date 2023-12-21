@@ -8,7 +8,7 @@ This API endpoint allows users to upload files and retrieve metadata information
 
 ## Request
 
-- **URL:** <u>image-pdf-recognition-api.onrender.com/metadata</u>
+- **URL:** <u>https://image-pdf-recognition-api.onrender.com/metadata</u>
 - **Method:** POST
 
 - **Content-Type:** multipart/form-data
@@ -32,4 +32,5 @@ This API endpoint allows users to upload files and retrieve metadata information
   "metadata": "Metadata of the file"
 }
 ```
-><strong>Note</strong>: The server may take little longer to send the response to the client as this is a cpu intensive task. 
+
+> <strong>Note</strong>: The server may take little longer to send the response to the client as this is a cpu intensive task.
