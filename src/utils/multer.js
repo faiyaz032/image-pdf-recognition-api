@@ -22,7 +22,7 @@ const upload = multer({
     if (!allowedMimeTypes.includes(file.mimetype)) {
       return cb(new Error('Only image and pdf files are allowed'));
     } else {
-      cb(null, true);
+      return cb(null, true);
     }
   },
 });

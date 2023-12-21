@@ -14,14 +14,6 @@ const app = express();
 
 // Endpoint to extract data from image or pdf
 app.post('/metadata', upload.single('file'), async (req, res, next) => {
-  const allowedMimeTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-  if (!allowedMimeTypes.includes(file.mimetype)) {
-    return res.status(500).json({
-      status: 'error',
-      message: 'Failed to process the file',
-    });
-  }
-
   const { path: filePath, mimetype } = req.file;
 
   let db = await pool.getConnection();
