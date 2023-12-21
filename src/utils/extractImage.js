@@ -10,7 +10,7 @@ const extractImage = async filePath => {
     const tesseract = await Tesseract.recognize(filePath, 'eng');
 
     result.dimension = `${imageInfo.width}x${imageInfo.height}`;
-    result.metadata = tesseract.data.text.replace(/\n/g, ' ').split(' ');
+    result.metadata = tesseract.data.text.replace(/\n/g, ' ');
     return result;
   } catch (error) {
     return error;
