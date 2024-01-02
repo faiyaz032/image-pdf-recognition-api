@@ -10,10 +10,12 @@ const pool = require('./config/database');
 const upload = require('./utils/multer');
 const runMigration = require('./utils/runMigration');
 const multer = require('multer');
+const logger = require('./utils/logger');
 
 // initialize the app
 const app = express();
 
+//prometheus
 const collectDefaultMetrics = client.collectDefaultMetrics;
 collectDefaultMetrics({
   register: client.register,
@@ -30,7 +32,6 @@ const totalRequestCounter = new client.Counter({
   name: 'total_request',
   help: 'Tells total request',
 });
-
 app.use(
   responseTime((req, res, time) => {
     totalRequestCounter.inc();
@@ -45,6 +46,7 @@ app.use(
 );
 
 app.get('/', (req, res) => {
+  logger.info(`Request on ${req.url}`);
   res.json({
     status: 'success',
     message: 'Hello from the server',
@@ -59,6 +61,7 @@ app.get('/metrics', async (req, res) => {
 
 // Endpoint to extract data from image or pdf
 app.post('/metadata', upload.single('file'), async (req, res, next) => {
+  logger.info(`Request on ${req.url}`);
   const { path: filePath, mimetype } = req.file;
 
   let db = await pool.getConnection();
@@ -101,7 +104,8 @@ app.post('/metadata', upload.single('file'), async (req, res, next) => {
       }
     }
   } catch (error) {
-    console.error(error);
+    console.log(error.message);
+    logger.error(error.message);
     next(new Error(error.message));
   } finally {
     //delete the file
@@ -112,6 +116,7 @@ app.post('/metadata', upload.single('file'), async (req, res, next) => {
 
 // global error middleware
 app.use((error, req, res, next) => {
+  logger.error(error.message);
   return res.status(500).json({
     status: 'error',
     message: error.message,
