@@ -1,6 +1,7 @@
 // dependencies
 require('dotenv').config();
 const express = require('express');
+const responseTime = require('response-time');
 const fs = require('fs');
 const client = require('prom-client');
 const extractImage = require('./utils/extractImage');
@@ -14,10 +15,34 @@ const multer = require('multer');
 const app = express();
 
 const collectDefaultMetrics = client.collectDefaultMetrics;
-
 collectDefaultMetrics({
   register: client.register,
 });
+
+const requestResponseTime = new client.Histogram({
+  name: 'request_time',
+  help: 'this tells how much time is taken by request and response',
+  labelNames: ['method', 'route', 'status_code'],
+  buckets: [1, 50, 100, 200, 400, 500, 800, 1000, 2000, 10000, 20000],
+});
+
+const totalRequestCounter = new client.Counter({
+  name: 'total_request',
+  help: 'Tells total request',
+});
+
+app.use(
+  responseTime((req, res, time) => {
+    totalRequestCounter.inc();
+    requestResponseTime
+      .labels({
+        method: req.method,
+        route: req.url,
+        status_code: res.statusCode,
+      })
+      .observe(time);
+  })
+);
 
 app.get('/', (req, res) => {
   res.json({
