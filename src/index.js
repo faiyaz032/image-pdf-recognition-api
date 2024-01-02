@@ -2,6 +2,7 @@
 require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
+const client = require('prom-client');
 const extractImage = require('./utils/extractImage');
 const extractPdf = require('./utils/extractPdf');
 const pool = require('./config/database');
@@ -11,6 +12,25 @@ const multer = require('multer');
 
 // initialize the app
 const app = express();
+
+const collectDefaultMetrics = client.collectDefaultMetrics;
+
+collectDefaultMetrics({
+  register: client.register,
+});
+
+app.get('/', (req, res) => {
+  res.json({
+    status: 'success',
+    message: 'Hello from the server',
+  });
+});
+
+app.get('/metrics', async (req, res) => {
+  res.setHeader('Content-Type', client.register.contentType);
+  const metrics = await client.register.metrics();
+  res.send(metrics);
+});
 
 // Endpoint to extract data from image or pdf
 app.post('/metadata', upload.single('file'), async (req, res, next) => {
