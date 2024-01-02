@@ -27,11 +27,15 @@ const requestResponseTime = new client.Histogram({
   labelNames: ['method', 'route', 'status_code'],
   buckets: [1, 50, 100, 200, 400, 500, 800, 1000, 2000, 10000, 20000],
 });
-
 const totalRequestCounter = new client.Counter({
   name: 'total_request',
   help: 'Tells total request',
 });
+const errorCounter = new client.Counter({
+  name: 'total_errors',
+  help: 'Tells how many error have ocurred in total',
+});
+
 app.use(
   responseTime((req, res, time) => {
     totalRequestCounter.inc();
@@ -61,7 +65,7 @@ app.get('/metrics', async (req, res) => {
 
 // Endpoint to extract data from image or pdf
 app.post('/metadata', upload.single('file'), async (req, res, next) => {
-  logger.info(`Request on ${req.url}`);
+  logger.info(`Request on  ${req.url}`);
   const { path: filePath, mimetype } = req.file;
 
   let db = await pool.getConnection();
@@ -104,7 +108,7 @@ app.post('/metadata', upload.single('file'), async (req, res, next) => {
       }
     }
   } catch (error) {
-    console.log(error.message);
+    errorCounter.inc();
     logger.error(error.message);
     next(new Error(error.message));
   } finally {
@@ -116,6 +120,7 @@ app.post('/metadata', upload.single('file'), async (req, res, next) => {
 
 // global error middleware
 app.use((error, req, res, next) => {
+  errorCounter.inc();
   logger.error(error.message);
   return res.status(500).json({
     status: 'error',
